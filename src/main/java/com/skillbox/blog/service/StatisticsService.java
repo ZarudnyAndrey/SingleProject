@@ -45,7 +45,7 @@ public class StatisticsService {
             .anyMatch(s -> s.getCode().equals("STATISTICS_IS_PUBLIC") && s.getValue().equals("YES"))
     ) {
       return new ResponseStatisticsDto().builder()
-          .posts(postRepository.findCountPosts())
+          .posts(postRepository.findCountOfSuitablePosts())
           .likes(postVoteRepository.findCountOfAllLikes())
           .dislikes(postVoteRepository.findCountOfAllDislikes())
           .views(postRepository.findCountAllViews())
