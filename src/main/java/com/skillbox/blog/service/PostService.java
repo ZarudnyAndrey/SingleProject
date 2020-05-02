@@ -13,14 +13,17 @@ import com.skillbox.blog.entity.Post;
 import com.skillbox.blog.entity.PostVoteEntity;
 import com.skillbox.blog.entity.Tag;
 import com.skillbox.blog.entity.User;
+import com.skillbox.blog.entity.enums.ModerationStatus;
 import com.skillbox.blog.exception.IllegalValueException;
 import com.skillbox.blog.mapper.RequestPostToPost;
+import com.skillbox.blog.repository.GlobalSettingRepository;
 import com.skillbox.blog.repository.PostCommentRepository;
 import com.skillbox.blog.repository.PostRepository;
 import com.skillbox.blog.repository.PostVoteRepository;
 import com.skillbox.blog.repository.TagRepository;
 import com.skillbox.blog.repository.UserRepository;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -48,6 +51,7 @@ public class PostService {
   UserService userService;
   PostVoteRepository postVoteRepository;
   PostCommentRepository postCommentRepository;
+  GlobalSettingRepository globalSettingRepository;
 
   @Transactional(readOnly = true)
   public ResponseAllPostsDto getPosts(int offset, int limit, String mode) {
@@ -69,7 +73,7 @@ public class PostService {
       posts = postRepository.findSuitablePosts(pageable);
     }
 
-    return new ResponseAllPostsDto().builder()
+    return ResponseAllPostsDto.builder()
         .count(count)
         .posts(postConversion(posts))
         .build();
@@ -81,18 +85,8 @@ public class PostService {
       return getPosts(offset, limit, "best");
     } else {
       int count = postRepository.findCountAllPostsByQuery(query);
-
-      if (count == 0) {
-        throw new EntityNotFoundException("Post / Comment not exist ");
-      }
-
       Pageable pageable = PageRequest.of(offset / limit, limit);
       List<Post> posts = postRepository.findAllPostsByQuery(query, pageable);
-
-      if (posts.isEmpty()) {
-        throw new EntityNotFoundException("Post / Comment not exist ");
-      }
-
       return ResponseAllPostsDto.builder()
           .count(count)
           .posts(postConversion(posts))
@@ -105,7 +99,7 @@ public class PostService {
         .orElseThrow(() -> new EntityNotFoundException("Post not found !"));
 
     User user = userRepository.findById(post.getUserId().getId());
-    post.setViewCount(post.getViewCount() + 1);
+    post.addUserView();
 
     PartInfoOfUser partInfoOfUser = PartInfoOfUser.builder()
         .id(user.getId())
@@ -135,7 +129,7 @@ public class PostService {
 
     String[] tags = tagRepository.findByPostId(postId);
 
-    return new ResponseOnePostDto().builder()
+    return ResponseOnePostDto.builder()
         .id(post.getId())
         .time(dateMapping(post.getTime()))
         .user(partInfoOfUser)
@@ -143,7 +137,8 @@ public class PostService {
         .text(post.getText())
         .likeCount(postVoteRepository.findCountOfLikesById(postId))
         .dislikeCount(postVoteRepository.findCountOfDislikesById(postId))
-        .viewCount(postRepository.findViewCountByPostId(postId))
+        .commentCount(comments.size())
+        .viewCount(post.getViewCount())
         .comments(comments)
         .tags(tags)
         .build();
@@ -178,13 +173,14 @@ public class PostService {
   }
 
   @Transactional(readOnly = true)
-  public ResponseAllPostsDto getModerationList(String status) {
+  public ResponseAllPostsDto getModerationList(int offset, int limit, String status) {
+    Pageable pageable = PageRequest.of(offset / limit, limit);
     int moderatorId = userService.getCurrentUser().getId();
     int count = postRepository
         .findCountPostsForModerationByStatus(moderatorId, status.toUpperCase());
 
     List<Post> postsForModeration = postRepository
-        .findPostsForModerationByStatus(moderatorId, status.toUpperCase());
+        .findPostsForModerationByStatus(moderatorId, status.toUpperCase(), pageable);
 
     List<PartInfoOfPosts> posts = new ArrayList<>();
 
@@ -254,10 +250,36 @@ public class PostService {
   }
 
   public ResponseResults<Boolean> createPost(RequestPost post) {
+    byte currentUserStatus = userService.getCurrentUser().getIsModerator();
+    boolean isMultiuserMode = globalSettingRepository.findMultiuserModeValue().equals("YES");
+    if (!isMultiuserMode && currentUserStatus == 0) {
+      return new ResponseResults<Boolean>().setResult(false);
+    }
+
     Post postToSave = requestMapper.mapNew(post);
     postToSave.setUserId(userService.getCurrentUser());
-    postToSave.setModeratorId(userService.getModerator());
+    postToSave.setModeratorId(userService.getModerator(isMultiuserMode));
     postToSave.setTagList(updateTags(post.getTags()));
+
+    if (globalSettingRepository.findPostPremoderationValue().equals("NO") || currentUserStatus == 1) {
+      postToSave.setModerationStatus(ModerationStatus.ACCEPTED);
+    }
+
+    postRepository.save(postToSave);
+    return new ResponseResults<Boolean>().setResult(true);
+  }
+
+  public ResponseResults<Boolean> editPost(RequestPost editPost, int postId) {
+    Post oldPost = getPostById(postId);
+    Post postToSave = requestMapper.mapEdit(editPost);
+    postToSave.setId(oldPost.getId());
+    postToSave.setUserId(oldPost.getUserId());
+    postToSave.setModeratorId(oldPost.getModeratorId());
+
+    if (userService.isModerator()) {
+      postToSave.setModerationStatus(oldPost.getModerationStatus());
+    }
+    postToSave.setTagList(updateTags(editPost.getTags()));
 
     postRepository.save(postToSave);
     return new ResponseResults<Boolean>().setResult(true);
@@ -313,11 +335,9 @@ public class PostService {
     }
   }
 
-  List<Tag> updateTags(String tagsStr) {
-    List<String> tags = Arrays.asList(tagsStr.trim()
-        .toLowerCase()
-        .split(","));
+  List<Tag> updateTags(String[] tagsStr) {
 
+    List<String> tags = Arrays.asList(tagsStr);
     List<Tag> existTagList = tagRepository.findAllByNameIn(tags);
 
     List<String> existTagListNames = existTagList.stream()
@@ -348,7 +368,7 @@ public class PostService {
   }
 
   private void createAndSaveLike(User currentUser, RequestLikeDislikeDto requestLikeDislikeDto) {
-    PostVoteEntity newLike = new PostVoteEntity().builder()
+    PostVoteEntity newLike = PostVoteEntity.builder()
         .postId(postRepository.findById(requestLikeDislikeDto.getPostId()).get())
         .time(LocalDateTime.now())
         .userId(currentUser)
@@ -365,7 +385,7 @@ public class PostService {
   }
 
   private void createAndSaveDislike(User currentUser, RequestLikeDislikeDto requestLikeDislikeDto) {
-    PostVoteEntity newDislike = new PostVoteEntity().builder()
+    PostVoteEntity newDislike = PostVoteEntity.builder()
         .postId(postRepository.findById(requestLikeDislikeDto.getPostId()).get())
         .time(LocalDateTime.now())
         .userId(currentUser)
@@ -382,19 +402,20 @@ public class PostService {
     EARLY
   }
 
-  private String dateMapping(LocalDateTime date) {
+  public String dateMapping(LocalDateTime date) {
     DateTimeFormatter standardFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
     DateTimeFormatter formattingToday = DateTimeFormatter.ofPattern("Сегодня, HH:mm");
     DateTimeFormatter formattingYesterday = DateTimeFormatter.ofPattern("Вчера, HH:mm");
 
-    LocalDateTime today = LocalDateTime.now();
-    final long oneDay = 1440;
-    final long twoDays = 2880;
+    LocalDateTime today = LocalDate.now().atStartOfDay();
 
-    if (Duration.between(date, today).toMinutes() <= oneDay) {
+    long diff = Duration.between(today, date).toSeconds();
+    final long oneDay = 86_400;
+
+    if (diff >= 0 && diff < oneDay) {
       return date.format(formattingToday);
 
-    } else if (Duration.between(date, today).toMinutes() <= twoDays) {
+    } else if (diff >= -oneDay && diff < 0) {
       return date.format(formattingYesterday);
 
     } else {

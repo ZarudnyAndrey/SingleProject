@@ -1,7 +1,6 @@
 package com.skillbox.blog.service;
 
 import com.skillbox.blog.dto.request.RequestCommentDto;
-import com.skillbox.blog.dto.request.RequestPost;
 import com.skillbox.blog.dto.response.ResponseResults;
 import com.skillbox.blog.entity.Post;
 import com.skillbox.blog.entity.PostComment;
@@ -47,20 +46,5 @@ public class CommentService {
       commentToSave.setParentId(parent);
     }
     return new ResponseResults<Integer>().setId(postCommentRepository.save(commentToSave).getId());
-  }
-
-  public ResponseResults<Boolean> editComment(RequestPost editPost, int postId) {
-    Post oldPost = postService.getPostById(postId);
-    Post postToSave = requestMapper.mapEdit(editPost);
-    postToSave.setUserId(oldPost.getUserId());
-    postToSave.setModeratorId(oldPost.getModeratorId());
-
-    if (userService.isModerator()) {
-      postToSave.setModerationStatus(oldPost.getModerationStatus());
-    }
-    postToSave.setTagList(postService.updateTags(editPost.getTags()));
-
-    postRepository.save(postToSave);
-    return new ResponseResults<Boolean>().setResult(true);
   }
 }

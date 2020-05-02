@@ -3,10 +3,12 @@ package com.skillbox.blog.dto.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 @Data
+@Builder
 @Accessors(chain = true)
 @AllArgsConstructor
 public class RequestCommentDto {

@@ -5,6 +5,7 @@ import com.skillbox.blog.entity.enums.Role;
 import com.skillbox.blog.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import javax.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -44,9 +45,17 @@ public class UserService implements UserDetailsService {
 
   }
 
-  public User getModerator() {
-    return userRepository.findByIsModerator((byte) 1)
-        .orElseThrow(() -> new EntityNotFoundException("Moderator is not defined."));
+  public User getModerator(boolean isMultiUserMode) {
+    User cu = getCurrentUser();
+    
+    if (isMultiUserMode) {
+      List<User> moderators = userRepository.findByIsModerator((byte) 1);
+      moderators.remove(cu);
+      return moderators.get(new Random().nextInt(moderators.size()));
+    }
+    else {
+      return cu;
+    }
   }
 
   public boolean isModerator() {
