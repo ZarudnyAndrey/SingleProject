@@ -430,12 +430,10 @@ public class PostService {
       int userId = post.getUserId().getId();
       String userName = userRepository.findNameById(userId);
       int postId = post.getId();
-      String announce;
+      String announce = post.getText().replaceAll("(<.*?>)|(&.*?;)", "");
 
-      if (post.getText().contains(".")) {
-        announce = post.getText().substring(0, post.getText().indexOf(".") + 1);
-      } else {
-        announce = post.getText();
+      if (announce.contains(".")) {
+        announce = announce.substring(0, announce.indexOf(".") + 1);
       }
 
       PartInfoOfUser infoOfUser = PartInfoOfUser.builder()

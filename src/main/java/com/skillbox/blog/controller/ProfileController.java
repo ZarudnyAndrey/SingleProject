@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping(value = "api/profile")
+@RequestMapping("api/profile")
 @AllArgsConstructor
 public class ProfileController {
 

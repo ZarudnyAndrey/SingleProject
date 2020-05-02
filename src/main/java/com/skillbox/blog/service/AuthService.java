@@ -61,6 +61,7 @@ public class AuthService {
           "<a href=/auth/restore>Запросить ссылку снова</a>";
 
   private UserRepository userRepository;
+  private UserService userService;
   private CaptchaRepository captchaRepository;
   private CaptchaToCaptchaDto captchaToCaptchaDto;
   private UserDtoToUser userDtoToUser;
@@ -128,9 +129,7 @@ public class AuthService {
           "Session does not exist: " + request.getHeader("Cookie"));
     }
     return new ResponseLoginDto<>()
-        .setUser(
-            userToResponseLoginDto
-                .map((User) ((UsernamePasswordAuthenticationToken) principal).getPrincipal()))
+        .setUser(userToResponseLoginDto.map(userService.getCurrentUser()))
         .setResult(true);
   }
 
