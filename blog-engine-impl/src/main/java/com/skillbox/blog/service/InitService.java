@@ -12,9 +12,9 @@ public class InitService {
     return ResponseInitDto.builder()
         .title("DevPub")
         .subtitle("Рассказы разработчиков")
-        .phone("+7 495 720 25 17")
-        .email("deal@symbioway.ru")
-        .copyright("Даниил Пилипенко")
+        .phone("+7 995 999 97 79")
+        .email("zarudnyandrey@gmail.com")
+        .copyright("Зарудний Андрей")
         .copyrightFrom("2019")
         .build();
   }
