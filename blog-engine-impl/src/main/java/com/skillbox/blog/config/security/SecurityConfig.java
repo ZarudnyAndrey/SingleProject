@@ -22,7 +22,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -47,7 +46,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
         .addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
         .exceptionHandling()
-        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+        .authenticationEntryPoint(this::handleNonWhitelistResources)
         .and()
         .headers()
         .frameOptions()
@@ -62,6 +61,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
     auth.userDetailsService(userService).passwordEncoder(bCryptPasswordEncoder());
+  }
+
+  private void handleNonWhitelistResources(HttpServletRequest request, HttpServletResponse response,
+      AuthenticationException authException) throws IOException {
+      response.sendRedirect("/404");
   }
 
   @Bean
