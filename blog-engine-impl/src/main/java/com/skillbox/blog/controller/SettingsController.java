@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class SettingsController {
 
-  SettingsService settingsService;
+  private SettingsService settingsService;
 
   @GetMapping("/settings")
   @ResponseStatus(HttpStatus.OK)

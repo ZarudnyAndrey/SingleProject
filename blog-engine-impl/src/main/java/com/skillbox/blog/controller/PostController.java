@@ -3,7 +3,7 @@ package com.skillbox.blog.controller;
 import com.skillbox.blog.dto.request.RequestLikeDislikeDto;
 import com.skillbox.blog.dto.request.RequestPost;
 import com.skillbox.blog.dto.response.ResponseAllPostsDto;
-import com.skillbox.blog.dto.response.ResponseOnePostDto;
+import com.skillbox.blog.dto.response.ResponsePostDto;
 import com.skillbox.blog.dto.response.ResponseResults;
 import com.skillbox.blog.service.PostService;
 import javax.validation.Valid;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class PostController {
 
-  PostService postService;
+  private PostService postService;
 
   @GetMapping("/post")
   @ResponseStatus(HttpStatus.OK)
@@ -45,7 +45,7 @@ public class PostController {
 
   @GetMapping("/post/{postId}")
   @ResponseStatus(HttpStatus.OK)
-  public ResponseOnePostDto getPost(@PathVariable int postId) {
+  public ResponsePostDto getPost(@PathVariable int postId) {
     return postService.getPost(postId);
   }
 
@@ -83,27 +83,27 @@ public class PostController {
 
   @PostMapping("/post")
   @ResponseStatus(HttpStatus.OK)
-  public ResponseResults<Boolean> createPost(@Valid @RequestBody RequestPost requestPost) {
+  public ResponseResults createPost(@Valid @RequestBody RequestPost requestPost) {
     return postService.createPost(requestPost);
   }
 
   @PostMapping("/post/like")
   @ResponseStatus(HttpStatus.OK)
-  public ResponseResults<Boolean> like(@RequestBody RequestLikeDislikeDto requestLikeDislikeDto) {
+  public ResponseResults like(@RequestBody RequestLikeDislikeDto requestLikeDislikeDto) {
     return postService.like(requestLikeDislikeDto);
   }
 
   @PostMapping("/post/dislike")
   @ResponseStatus(HttpStatus.OK)
-  public ResponseResults<Boolean> dislike(
+  public ResponseResults dislike(
       @RequestBody RequestLikeDislikeDto requestLikeDislikeDto) {
     return postService.dislike(requestLikeDislikeDto);
   }
 
   @PutMapping("/post/{postId}")
   @ResponseStatus(HttpStatus.OK)
-  public ResponseResults<Boolean> editPost(@Valid @RequestBody RequestPost postToEdit,
-                                           @PathVariable int postId) {
+  public ResponseResults editPost(@Valid @RequestBody RequestPost postToEdit,
+                                         @PathVariable int postId) {
     return postService.editPost(postToEdit, postId);
   }
 }

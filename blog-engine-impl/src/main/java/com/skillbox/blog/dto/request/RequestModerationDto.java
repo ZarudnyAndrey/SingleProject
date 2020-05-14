@@ -11,7 +11,6 @@ import lombok.Data;
 public class RequestModerationDto {
 
   @JsonProperty(value = "post_id")
-  int postId;
-
-  String decision;
+  private int postId;
+  private String decision;
 }

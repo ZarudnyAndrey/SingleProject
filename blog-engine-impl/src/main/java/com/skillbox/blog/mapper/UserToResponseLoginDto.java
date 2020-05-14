@@ -13,5 +13,4 @@ public interface UserToResponseLoginDto {
   @Mapping(target = "moderation", expression = "java(user.getIsModerator() != 0 ? true : false)")
   @Mapping(target = "settings", expression = "java(user.getIsModerator() != 0 ? true : false)")
   ResponseUserDto map(User user);
-
 }

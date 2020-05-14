@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class TagController {
 
-  TagService tagService;
+  private TagService tagService;
 
   @GetMapping("/tag")
   @ResponseStatus(HttpStatus.OK)

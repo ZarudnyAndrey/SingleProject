@@ -38,4 +38,3 @@ public class PostComment {
   @Column
   private String text;
 }
-

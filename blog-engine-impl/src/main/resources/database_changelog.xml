@@ -9,4 +9,6 @@
   <include file="db.changelog/V1.0/2020-03-08-create-tables-cumulative.xml"
     relativeToChangelogFile="true"/>
 
+
+
 </databaseChangeLog>

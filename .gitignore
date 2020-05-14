@@ -71,6 +71,7 @@ fabric.properties
 .compose/
 target/
 upload/
+avatars/
 *.iml
 
 *.java linguist-detectable=true

@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PartComment {
 
-  int id;
-  String time;
-  PartInfoOfUser user;
-  String text;
+  private int id;
+  private String time;
+  private PartInfoOfUser user;
+  private String text;
 }

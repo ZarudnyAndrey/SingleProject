@@ -21,9 +21,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Data
 @Entity
+@DynamicUpdate
 @Builder
 @Table(name = "post")
 @AllArgsConstructor
@@ -38,6 +41,7 @@ public class Post {
   private byte isActive;
 
   @Column(nullable = false)
+  @ColumnTransformer(read = "UPPER(moderation_status)")
   @Enumerated(EnumType.STRING)
   private ModerationStatus moderationStatus;
 

@@ -20,4 +20,3 @@ public class SimpleFormatter implements MessageFormattingStrategy {
             elapsed);
   }
 }
-

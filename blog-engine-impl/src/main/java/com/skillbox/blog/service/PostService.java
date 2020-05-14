@@ -6,13 +6,14 @@ import com.skillbox.blog.dto.response.PartComment;
 import com.skillbox.blog.dto.response.PartInfoOfPosts;
 import com.skillbox.blog.dto.response.PartInfoOfUser;
 import com.skillbox.blog.dto.response.ResponseAllPostsDto;
-import com.skillbox.blog.dto.response.ResponseOnePostDto;
+import com.skillbox.blog.dto.response.ResponsePostDto;
 import com.skillbox.blog.dto.response.ResponseResults;
 import com.skillbox.blog.dto.response.temporary.TemporaryComment;
 import com.skillbox.blog.entity.Post;
 import com.skillbox.blog.entity.PostVoteEntity;
 import com.skillbox.blog.entity.Tag;
 import com.skillbox.blog.entity.User;
+import com.skillbox.blog.entity.enums.GlobalSettingsValue;
 import com.skillbox.blog.entity.enums.ModerationStatus;
 import com.skillbox.blog.exception.IllegalValueException;
 import com.skillbox.blog.mapper.RequestPostToPost;
@@ -33,10 +34,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -44,38 +47,41 @@ import org.springframework.transaction.annotation.Transactional;
 @AllArgsConstructor
 public class PostService {
 
-  PostRepository postRepository;
-  TagRepository tagRepository;
-  UserRepository userRepository;
-  RequestPostToPost requestMapper;
-  UserService userService;
-  PostVoteRepository postVoteRepository;
-  PostCommentRepository postCommentRepository;
-  GlobalSettingRepository globalSettingRepository;
+  private PostRepository postRepository;
+  private TagRepository tagRepository;
+  private UserRepository userRepository;
+  private RequestPostToPost requestMapper;
+  private UserService userService;
+  private PostVoteRepository postVoteRepository;
+  private PostCommentRepository postCommentRepository;
+  private GlobalSettingRepository globalSettingRepository;
 
   @Transactional(readOnly = true)
   public ResponseAllPostsDto getPosts(int offset, int limit, String mode) {
-    int count = postRepository.findCountOfSuitablePosts();
-    PostService.SORT sortMode = PostService.SORT.valueOf(mode.toUpperCase());
+    long count;
+    Sort sortMode = Sort.valueOf(mode.toUpperCase());
     Pageable pageable = PageRequest.of(offset / limit, limit);
-    List<Post> posts;
+    Page<Post> posts;
 
-    if (sortMode == SORT.POPULAR) {
+    if (sortMode == Sort.POPULAR) {
       posts = postRepository.findPostsByPopular(pageable);
-    } else if (sortMode == SORT.BEST) {
+      count = posts.getTotalElements();
+    } else if (sortMode == Sort.BEST) {
       posts = postRepository.findPostsByBest(pageable);
+      count = posts.getTotalElements();
     } else {
       Direction direction = Direction.valueOf("DESC");
-      if (sortMode == SORT.EARLY) {
+      if (sortMode == Sort.EARLY) {
         direction = Direction.valueOf("ASC");
       }
       pageable = PageRequest.of(offset / limit, limit, direction, "time");
       posts = postRepository.findSuitablePosts(pageable);
+      count = posts.getTotalElements();
     }
 
     return ResponseAllPostsDto.builder()
         .count(count)
-        .posts(postConversion(posts))
+        .posts(postConversion(posts.getContent()))
         .build();
   }
 
@@ -94,7 +100,7 @@ public class PostService {
     }
   }
 
-  public ResponseOnePostDto getPost(int postId) {
+  public ResponsePostDto getPost(int postId) {
     Post post = postRepository.findById(postId)
         .orElseThrow(() -> new EntityNotFoundException("Post not found !"));
 
@@ -129,7 +135,7 @@ public class PostService {
 
     String[] tags = tagRepository.findByPostId(postId);
 
-    return ResponseOnePostDto.builder()
+    return ResponsePostDto.builder()
         .id(post.getId())
         .time(dateMapping(post.getTime()))
         .user(partInfoOfUser)
@@ -175,18 +181,17 @@ public class PostService {
   @Transactional(readOnly = true)
   public ResponseAllPostsDto getModerationList(int offset, int limit, String status) {
     Pageable pageable = PageRequest.of(offset / limit, limit);
-    int moderatorId = userService.getCurrentUser().getId();
     int count = postRepository
-        .findCountPostsForModerationByStatus(moderatorId, status.toUpperCase());
+        .findCountPostsForModerationByStatus(status.toUpperCase());
 
     List<Post> postsForModeration = postRepository
-        .findPostsForModerationByStatus(moderatorId, status.toUpperCase(), pageable);
+        .findPostsForModerationByStatus(status.toUpperCase(), pageable);
 
     List<PartInfoOfPosts> posts = new ArrayList<>();
 
     for (Post post : postsForModeration) {
       int userId = post.getUserId().getId();
-      String userName = userRepository.findNameById(userId);
+      String userName = post.getUserId().getName();
       String announce;
 
       if (post.getText().contains(".")) {
@@ -249,27 +254,29 @@ public class PostService {
         .build();
   }
 
-  public ResponseResults<Boolean> createPost(RequestPost post) {
-    byte currentUserStatus = userService.getCurrentUser().getIsModerator();
-    boolean isMultiuserMode = globalSettingRepository.findMultiuserModeValue().equals("YES");
-    if (!isMultiuserMode && currentUserStatus == 0) {
-      return new ResponseResults<Boolean>().setResult(false);
+  public ResponseResults createPost(RequestPost post) {
+    boolean isModerator = userService.isModerator();
+    boolean isMultiuserMode = globalSettingRepository.findMultiuserModeValue().equals(
+        GlobalSettingsValue.YES.name());
+    if (!isMultiuserMode && !isModerator) {
+      return new ResponseResults().setResult(false);
     }
 
     Post postToSave = requestMapper.mapNew(post);
     postToSave.setUserId(userService.getCurrentUser());
-    postToSave.setModeratorId(userService.getModerator(isMultiuserMode));
+    postToSave.setModeratorId(isMultiuserMode ? null : userService.getCurrentUser());
     postToSave.setTagList(updateTags(post.getTags()));
 
-    if (globalSettingRepository.findPostPremoderationValue().equals("NO") || currentUserStatus == 1) {
+    if (globalSettingRepository.findPostPremoderationValue().equals(GlobalSettingsValue.NO.name()) || isModerator) {
       postToSave.setModerationStatus(ModerationStatus.ACCEPTED);
     }
 
     postRepository.save(postToSave);
-    return new ResponseResults<Boolean>().setResult(true);
+    return new ResponseResults().setResult(true);
   }
 
-  public ResponseResults<Boolean> editPost(RequestPost editPost, int postId) {
+  @Transactional(isolation = Isolation.REPEATABLE_READ)
+  public ResponseResults editPost(RequestPost editPost, int postId) {
     Post oldPost = getPostById(postId);
     Post postToSave = requestMapper.mapEdit(editPost);
     postToSave.setId(oldPost.getId());
@@ -282,10 +289,10 @@ public class PostService {
     postToSave.setTagList(updateTags(editPost.getTags()));
 
     postRepository.save(postToSave);
-    return new ResponseResults<Boolean>().setResult(true);
+    return new ResponseResults().setResult(true);
   }
 
-  public ResponseResults<Boolean> like(RequestLikeDislikeDto requestLikeDislikeDto) {
+  public ResponseResults like(RequestLikeDislikeDto requestLikeDislikeDto) {
     if (postRepository.findById(requestLikeDislikeDto.getPostId()).isPresent()) {
       User currentUser = userService.getCurrentUser();
       Optional<Integer> result = postVoteRepository
@@ -293,15 +300,16 @@ public class PostService {
 
       if (result.isEmpty()) {
         createAndSaveLike(currentUser, requestLikeDislikeDto);
-        return new ResponseResults<Boolean>().setResult(true);
+        return new ResponseResults().setResult(true);
 
       } else if (result.get() == -1) {
         deleteDislike(currentUser, requestLikeDislikeDto);
         createAndSaveLike(currentUser, requestLikeDislikeDto);
-        return new ResponseResults<Boolean>().setResult(true);
+        return new ResponseResults().setResult(true);
 
       } else if (result.get() == 1) {
-        return new ResponseResults<Boolean>().setResult(false);
+        deleteLike(currentUser, requestLikeDislikeDto);
+        return new ResponseResults().setResult(false);
       } else {
         throw new IllegalValueException("Only 1 or -1.");
       }
@@ -310,7 +318,7 @@ public class PostService {
     }
   }
 
-  public ResponseResults<Boolean> dislike(RequestLikeDislikeDto requestLikeDislikeDto) {
+  public ResponseResults dislike(RequestLikeDislikeDto requestLikeDislikeDto) {
     if (postRepository.findById(requestLikeDislikeDto.getPostId()).isPresent()) {
       User currentUser = userService.getCurrentUser();
       Optional<Integer> result = postVoteRepository
@@ -318,15 +326,16 @@ public class PostService {
 
       if (result.isEmpty()) {
         createAndSaveDislike(currentUser, requestLikeDislikeDto);
-        return new ResponseResults<Boolean>().setResult(true);
+        return new ResponseResults().setResult(true);
 
       } else if (result.get() == 1) {
         deleteLike(currentUser, requestLikeDislikeDto);
         createAndSaveDislike(currentUser, requestLikeDislikeDto);
-        return new ResponseResults<Boolean>().setResult(true);
+        return new ResponseResults().setResult(true);
 
       } else if (result.get() == -1) {
-        return new ResponseResults<Boolean>().setResult(false);
+        deleteDislike(currentUser,requestLikeDislikeDto);
+        return new ResponseResults().setResult(false);
       } else {
         throw new IllegalValueException("Only 1 or -1.");
       }
@@ -395,7 +404,7 @@ public class PostService {
     postVoteRepository.save(newDislike);
   }
 
-  private enum SORT {
+  private enum Sort {
     RECENT,
     POPULAR,
     BEST,

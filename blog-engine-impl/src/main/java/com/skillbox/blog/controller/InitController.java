@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class InitController {
 
-  InitService initService;
+  private InitService initService;
 
   @GetMapping("/init")
   @ResponseStatus(HttpStatus.OK)

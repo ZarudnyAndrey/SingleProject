@@ -9,6 +9,6 @@ import lombok.experimental.Accessors;
 public class RequestLoginDto {
 
   @JsonProperty("e_mail")
-  String email;
-  String password;
+  private String email;
+  private String password;
 }

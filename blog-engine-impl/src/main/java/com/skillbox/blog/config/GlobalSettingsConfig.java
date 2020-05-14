@@ -26,7 +26,7 @@ public class GlobalSettingsConfig implements CommandLineRunner {
   GlobalSettingRepository repository;
 
   @Override
-  public void run(String... args) throws Exception {
+  public void run(String... args) {
     repository.deleteAll();
     repository.saveAll(
         globalSettings.stream()
@@ -42,5 +42,4 @@ public class GlobalSettingsConfig implements CommandLineRunner {
     private String name;
     private String value;
   }
-
 }

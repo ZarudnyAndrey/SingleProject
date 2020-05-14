@@ -13,5 +13,5 @@ import lombok.NoArgsConstructor;
 public class RequestLikeDislikeDto {
 
   @JsonProperty(value = "post_id")
-  int postId;
+  private int postId;
 }

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PartInfoOfUser {
 
-  int id;
-  String name;
-  String photo;
+  private int id;
+  private String name;
+  private String photo;
 }

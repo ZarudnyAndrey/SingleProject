@@ -7,17 +7,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class RouteController {
 
   @RequestMapping(value = {
+      "/add",
       "/edit/*",
-      "/calendar/*",
-      "/my/*",
-      "/login",
+      "/calendar",
+      "/calendar/**",
       "/login/**",
       "/moderator/*",
       "/moderation/*",
+      "/my/*",
       "/post/*",
       "/posts/*",
       "/profile",
-      "settings",
+      "/settings",
       "/stat",
       "/tag/*",
       "/404"

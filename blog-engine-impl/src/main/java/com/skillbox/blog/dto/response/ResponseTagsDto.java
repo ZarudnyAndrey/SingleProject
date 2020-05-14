@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ResponseTagsDto {
 
-  List<TagDto> tags;
+  private List<TagDto> tags;
 }

@@ -6,12 +6,10 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class ResponseLoginDto<T extends Object> extends ResponseResults<Object> {
+public class ResponseLoginDto {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  ResponseUserDto user;
+  private boolean result;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private ResponseUserDto user;
 }
-
-
-
-

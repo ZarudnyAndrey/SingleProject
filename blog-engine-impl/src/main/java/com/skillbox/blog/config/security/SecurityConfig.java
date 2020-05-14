@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -27,6 +28,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @EnableWebSecurity
 @AllArgsConstructor
+@EnableGlobalMethodSecurity(securedEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
   private final UserToResponseLoginDto userToResponseLoginDto;
@@ -38,7 +40,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     http.csrf()
         .disable()
         .authorizeRequests()
-//                .antMatchers(SecurityConstants.AUTH_WHITELIST)
         .regexMatchers(SecurityConstants.AUTH_WHITELIST)
         .permitAll()
         .anyRequest()
@@ -89,9 +90,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
       HttpServletRequest request, HttpServletResponse response, Authentication authentication)
       throws IOException {
     response.setStatus(HttpStatus.OK.value());
+    setContentTypeJson(response);
     objectMapper.writeValue(
         response.getWriter(),
-        new ResponseLoginDto<>()
+        new ResponseLoginDto()
             .setUser(
                 userToResponseLoginDto.map(
                     (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal())
@@ -104,20 +106,25 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
       HttpServletRequest request, HttpServletResponse response, AuthenticationException e)
       throws IOException {
     response.setStatus(HttpStatus.OK.value());
+    setContentTypeJson(response);
     objectMapper.writeValue(
         response.getWriter(),
-        new ResponseLoginDto<>()
+        new ResponseLoginDto()
             .setResult(false));
   }
 
   private void logoutSuccessHandler(
       HttpServletRequest request, HttpServletResponse response, Authentication authentication)
       throws IOException {
-
     response.setStatus(HttpStatus.OK.value());
+    setContentTypeJson(response);
     objectMapper.writeValue(
         response.getWriter(),
-        new ResponseResults<>()
+        new ResponseResults()
             .setResult(true));
+  }
+
+  private void setContentTypeJson(HttpServletResponse response) {
+    response.setHeader("Content-Type", "application/json;charset=UTF-8");
   }
 }

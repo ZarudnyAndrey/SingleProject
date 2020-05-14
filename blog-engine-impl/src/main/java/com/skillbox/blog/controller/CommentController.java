@@ -17,11 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class CommentController {
 
-  CommentService commentService;
+  private CommentService commentService;
 
   @PostMapping("/comment")
   @ResponseStatus(HttpStatus.OK)
-  public ResponseResults<Integer> createComment(@Valid @RequestBody RequestCommentDto comment) {
+  public ResponseResults createComment(@Valid @RequestBody RequestCommentDto comment) {
     return commentService.createComment(comment);
   }
 }

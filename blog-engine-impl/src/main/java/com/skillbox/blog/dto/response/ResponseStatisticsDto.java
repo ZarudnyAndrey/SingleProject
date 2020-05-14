@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ResponseStatisticsDto {
 
-  int postsCount;
-  int likesCount;
-  int dislikesCount;
-  int viewsCount;
-  String firstPublication;
+  private int postsCount;
+  private int likesCount;
+  private int dislikesCount;
+  private int viewsCount;
+  private String firstPublication;
 }

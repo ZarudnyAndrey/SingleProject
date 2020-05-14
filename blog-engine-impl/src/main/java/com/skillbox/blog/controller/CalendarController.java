@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class CalendarController {
 
-  CalendarService calendarService;
+  private CalendarService calendarService;
 
   @GetMapping("/calendar")
   @ResponseStatus(HttpStatus.OK)

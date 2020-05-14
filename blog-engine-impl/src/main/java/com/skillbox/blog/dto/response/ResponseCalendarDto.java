@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 public class ResponseCalendarDto {
 
   @JsonProperty("years")
-  List<Integer> years;
+  private List<Integer> years;
 
   @JsonProperty("posts")
-  Map<String, Integer> posts;
+  private Map<String, Integer> posts;
 }

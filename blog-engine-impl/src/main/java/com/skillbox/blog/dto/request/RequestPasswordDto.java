@@ -11,9 +11,9 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class RequestPasswordDto {
 
-  String code;
+  private String code;
   @Size(min = 6)
-  String password;
+  private String password;
   private String captcha;
   @JsonProperty("captcha_secret")
   private String captchaSecret;

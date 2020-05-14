@@ -29,4 +29,3 @@ public class CaptchaCode {
   @Column(nullable = false)
   private String secretCode;
 }
-

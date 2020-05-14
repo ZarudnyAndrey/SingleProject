@@ -30,7 +30,13 @@ public class SecurityConstants {
       "/api/auth/check",
       "/api/settings",
       "/api/tag.*",
+      // resources
+      "/upload/.*",
+      "/avatars/.*",
+      "/default-1.png",
+      "/favicon.ico",
       // frontend paths
+      "/add",
       "/css/.*",
       "/fonts/.*",
       "/js/.*",

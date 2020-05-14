@@ -15,10 +15,8 @@ public class RequestCommentDto {
 
   @JsonProperty(value = "parent_id")
   private String parentId;
-
   @JsonProperty(value = "post_id")
   private int postId;
-
   @Size(max = 200, message = "Текст публикации слишком короткий")
   private String text;
 }

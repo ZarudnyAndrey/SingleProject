@@ -2,7 +2,6 @@ package com.skillbox.blog.repository;
 
 import com.skillbox.blog.entity.User;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,8 +13,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
   User findById(int Id);
 
   Optional<User> findByEmail(String email);
-
-  List<User> findByIsModerator(byte isModerator);// 0 - user, 1 - moderator
 
   Optional<User> findByCode(String code);
 

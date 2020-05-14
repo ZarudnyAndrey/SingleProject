@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @RestControllerAdvice
@@ -25,14 +26,14 @@ public class GlobalExceptionHandler {
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseResults<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
+  public ResponseResults handleValidationExceptions(MethodArgumentNotValidException ex) {
     HashMap<String, String> collections = new HashMap<>();
     ex.getBindingResult().getAllErrors().forEach((error) -> {
       String fieldName = ((FieldError) error).getField();
       String errorMessage = error.getDefaultMessage();
       collections.put(fieldName, errorMessage);
     });
-    return new ResponseResults<>()
+    return new ResponseResults()
         .setResult(false)
         .setErrors(collections);
   }
@@ -48,19 +49,29 @@ public class GlobalExceptionHandler {
 
   @ResponseStatus(HttpStatus.UNAUTHORIZED)
   @ExceptionHandler(InternalAuthenticationServiceException.class)
-  public ResponseResults<?> handleInternalAuthenticationException(
+  public ResponseResults handleInternalAuthenticationException(
       InternalAuthenticationServiceException e) {
     log.error(e.getMessage());
-    return new ResponseResults<>()
+    return new ResponseResults()
         .setResult(false);
   }
 
   @ResponseStatus(HttpStatus.OK)
   @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
-  public ResponseResults<?> handleCheckAuthenticationException(
+  public ResponseResults handleCheckAuthenticationException(
       AuthenticationCredentialsNotFoundException e) {
     log.error(e.getMessage());
-    return new ResponseResults<>()
+    return new ResponseResults()
+        .setResult(false);
+  }
+
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseResults handleFileSizeLimitException(
+      MaxUploadSizeExceededException e) {
+    log.error(e.getMessage());
+    return new ResponseResults()
+        .setErrors(Map.of("file", "File too large"))
         .setResult(false);
   }
 
@@ -82,13 +93,12 @@ public class GlobalExceptionHandler {
         .build();
   }
 
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ResponseStatus(HttpStatus.OK)
   @ExceptionHandler(StatusException.class)
-  public ErrorResponse handleStatusException(StatusException ex) {
+  public ResponseResults handleStatusException(StatusException ex) {
     log.error("Settings not found in the database: {}", ex.getMessage());
-    return ErrorResponse.builder()
-        .message("But it is for You.")
-        .build();
+    return new ResponseResults()
+        .setResult(false);
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -100,29 +110,26 @@ public class GlobalExceptionHandler {
         .build();
   }
 
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ResponseStatus(HttpStatus.UNAUTHORIZED)
   @ExceptionHandler(AccessDeniedException.class)
-  public ErrorResponse handleStatisticsAccessDeniedException(AccessDeniedException ex) {
+  public void handleStatisticsAccessDeniedException(AccessDeniedException ex) {
     log.error("Access denied: {}", ex.getMessage());
-    return ErrorResponse.builder()
-        .message("Statistics hidden by moderator!")
-        .build();
   }
 
   @ResponseStatus(HttpStatus.OK)
   @ExceptionHandler(InvalidCaptchaException.class)
-  public ResponseResults<?> handleCaptchaException(InvalidCaptchaException ex) {
+  public ResponseResults handleCaptchaException(InvalidCaptchaException ex) {
     log.error("invalid captcha: {}", ex.getMessage());
-    return new ResponseResults<>()
+    return new ResponseResults()
         .setErrors(Map.of("captcha", ex.getMessage()))
         .setResult(false);
   }
 
-  @ResponseStatus(HttpStatus.OK)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidAttributeException.class)
-  public ResponseResults<?> handleInvalidAttributeException(InvalidAttributeException ex) {
+  public ResponseResults handleInvalidAttributeException(InvalidAttributeException ex) {
     log.error("{}: {}", ex.getMessage(), ex.getErrors());
-    return new ResponseResults<>()
+    return new ResponseResults()
         .setResult(false)
         .setErrors(ex.getErrors());
   }

@@ -11,13 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PartInfoOfPosts {
 
-  int id;
-  String time;
-  PartInfoOfUser user;
-  String title;
-  String announce;
-  int likeCount;
-  int dislikeCount;
-  int commentCount;
-  int viewCount;
+  private int id;
+  private String time;
+  private PartInfoOfUser user;
+  private String title;
+  private String announce;
+  private int likeCount;
+  private int dislikeCount;
+  private int commentCount;
+  private int viewCount;
 }
